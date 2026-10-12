@@ -51,3 +51,6 @@ npm run dev                # http://localhost:5173
 ## Tests
 
 API: `php artisan test` — 39 tests / 255 assertions passing.
+
+## Discussions
+Have a question? Ask it in [GitHub Discussions](../../discussions).
