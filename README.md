@@ -54,3 +54,5 @@ API: `php artisan test` — 39 tests / 255 assertions passing.
 
 ## Discussions
 Have a question? Ask it in [GitHub Discussions](../../discussions).
+
+> Built with Laravel 12 and React 18.
