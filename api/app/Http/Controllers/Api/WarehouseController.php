@@ -58,8 +58,15 @@ class WarehouseController extends Controller
 
     public function destroy(Warehouse $warehouse)
     {
-        if ($warehouse->stockLevels()->where('qty', '>', 0)->exists()) {
-            return response()->json(['message' => 'Cannot delete a warehouse that holds stock.'], 422);
+        $hasStock = $warehouse->stockLevels()->where('qty', '>', 0)->exists();
+        $hasHistory = $warehouse->movements()->exists()
+            || $warehouse->invoices()->exists()
+            || $warehouse->purchaseOrders()->exists();
+
+        if ($hasStock || $hasHistory) {
+            return response()->json([
+                'message' => 'Cannot delete a warehouse that holds stock or has documents or movements.',
+            ], 422);
         }
 
         $warehouse->delete();

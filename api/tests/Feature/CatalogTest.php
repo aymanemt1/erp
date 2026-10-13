@@ -2,6 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Models\Client;
+use App\Models\Product;
+use App\Models\StockMovement;
+use App\Models\Supplier;
+use App\Models\Warehouse;
+
 class CatalogTest extends ErpTestCase
 {
     public function test_category_crud_and_unique_name(): void
@@ -90,5 +96,58 @@ class CatalogTest extends ErpTestCase
         $warehouses = $this->getJson('/api/warehouses', $headers)->json('data');
         $defaults = array_filter($warehouses, fn ($w) => $w['is_default']);
         $this->assertCount(1, $defaults);
+    }
+
+    public function test_warehouse_with_documents_or_movements_cannot_be_deleted(): void
+    {
+        $headers = $this->admin();
+        $product = Product::where('sku', 'PPR-A4-BOX')->firstOrFail();
+
+        $unusedId = $this->postJson('/api/warehouses', [
+            'name' => 'Unused Depot', 'location' => 'Agadir',
+        ], $headers)->json('data.id');
+        $this->deleteJson("/api/warehouses/{$unusedId}", [], $headers)->assertNoContent();
+        $this->assertNull(Warehouse::find($unusedId));
+
+        $invoiceWarehouseId = $this->postJson('/api/warehouses', [
+            'name' => 'Invoice Depot', 'location' => 'Fes',
+        ], $headers)->json('data.id');
+        $this->postJson('/api/invoices', [
+            'client_id' => Client::firstOrFail()->id,
+            'warehouse_id' => $invoiceWarehouseId,
+            'items' => [['product_id' => $product->id, 'qty' => 1]],
+        ], $headers)->assertCreated();
+
+        $this->deleteJson("/api/warehouses/{$invoiceWarehouseId}", [], $headers)->assertStatus(422);
+        $this->assertNotNull(Warehouse::find($invoiceWarehouseId));
+
+        $poWarehouseId = $this->postJson('/api/warehouses', [
+            'name' => 'PO Depot', 'location' => 'Oujda',
+        ], $headers)->json('data.id');
+        $this->postJson('/api/purchase-orders', [
+            'supplier_id' => Supplier::firstOrFail()->id,
+            'warehouse_id' => $poWarehouseId,
+            'items' => [['product_id' => $product->id, 'qty' => 1]],
+        ], $headers)->assertCreated();
+
+        $this->deleteJson("/api/warehouses/{$poWarehouseId}", [], $headers)->assertStatus(422);
+        $this->assertNotNull(Warehouse::find($poWarehouseId));
+
+        // Qty can return to zero while the movement ledger must stay.
+        $movementWarehouseId = $this->postJson('/api/warehouses', [
+            'name' => 'Adjusted Depot', 'location' => 'Tangier',
+        ], $headers)->json('data.id');
+        $this->postJson('/api/stock/adjust', [
+            'product_id' => $product->id, 'warehouse_id' => $movementWarehouseId, 'qty' => 2,
+        ], $headers)->assertCreated();
+        $this->postJson('/api/stock/adjust', [
+            'product_id' => $product->id, 'warehouse_id' => $movementWarehouseId, 'qty' => -2,
+        ], $headers)->assertCreated();
+
+        $this->deleteJson("/api/warehouses/{$movementWarehouseId}", [], $headers)->assertStatus(422);
+        $this->assertNotNull(Warehouse::find($movementWarehouseId));
+        $this->assertTrue(
+            StockMovement::where('warehouse_id', $movementWarehouseId)->exists()
+        );
     }
 }
