@@ -1,6 +1,6 @@
 # ERP — Stock & Invoicing Management
 
-![Laravel](https://img.shields.io/badge/Laravel-FF2D20?style=flat-square&logo=laravel&logoColor=white) ![React](https://img.shields.io/badge/React-20232A?style=flat-square&logo=react&logoColor=61DAFB) ![Tests](https://img.shields.io/badge/tests-39_passed-brightgreen?style=flat-square)
+[![Tests](https://github.com/aymanemt1/erp/actions/workflows/tests.yml/badge.svg)](https://github.com/aymanemt1/erp/actions/workflows/tests.yml) ![Laravel](https://img.shields.io/badge/Laravel-FF2D20?style=flat-square&logo=laravel&logoColor=white) ![React](https://img.shields.io/badge/React-20232A?style=flat-square&logo=react&logoColor=61DAFB)
 
 A full-featured ERP system: multi-warehouse inventory, purchasing, sales, invoicing with PDF, payments, and low-stock alerts.
 
